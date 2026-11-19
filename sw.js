@@ -1,5 +1,5 @@
 // Funciona sin conexión: primero intenta la red (para recibir actualizaciones) y si falla usa la copia guardada.
-const CACHE = 'medicamentos-v1';
+const CACHE = 'medicamentos-v2';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

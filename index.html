@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Control de Medicamentos</title>
+<title>Medicamentos</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -14,239 +14,327 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root {
-    --bg: #f5f6f8;
-    --card: #ffffff;
-    --text: #1d2330;
-    --muted: #667085;
-    --line: #e3e6ec;
-    --defla: #2f6fdb;
-    --defla-soft: #e8f0fd;
-    --iso: #c2410c;
-    --iso-soft: #fdeee6;
-    --ok: #15803d;
-    --ok-soft: #e7f6ec;
-    --today: #7c3aed;
-    --warn: #b42318;
+    --bg: #f3f4f7; --card: #ffffff; --text: #18202e; --muted: #677085; --line: #e2e5eb;
+    --defla: #2f6fdb; --defla-soft: #e7effc;
+    --iso: #d0530f; --iso-soft: #fdede4;
+    --ok: #16a34a; --ok-soft: #e3f6ea;
+    --bad: #dc2626; --bad-soft: #fdeaea;
+    --accent: #2f6fdb;
+    --nav-h: 64px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #12151b; --card: #1b2029; --text: #e7eaf0; --muted: #98a2b3; --line: #2c3340;
-      --defla: #7aa7ff; --defla-soft: #1d2a44; --iso: #ff9a66; --iso-soft: #3a2519;
-      --ok: #4ade80; --ok-soft: #173224; --today: #a78bfa; --warn: #f97066;
+      --bg: #10131a; --card: #1a1f29; --text: #e8ebf1; --muted: #9aa3b5; --line: #2a313e;
+      --defla: #6f9dff; --defla-soft: #1b2843;
+      --iso: #ff925a; --iso-soft: #3a2418;
+      --ok: #4ade80; --ok-soft: #14301f;
+      --bad: #f87171; --bad-soft: #3a1a1a;
+      --accent: #6f9dff;
       color-scheme: dark;
     }
   }
-  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 17px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  .wrap {
-    max-width: 1100px; margin: 0 auto;
-    padding: calc(20px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
-             calc(48px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  .screen {
+    max-width: 520px; margin: 0 auto;
+    padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom, 0px));
   }
-  h1 { font-size: 1.6rem; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 20px; }
+  .eyebrow { color: var(--muted); font-size: .95rem; margin: 0; }
+  h1 { font-size: 1.7rem; margin: 2px 0 16px; line-height: 1.2; }
+  h2 { font-size: 1.05rem; margin: 22px 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
 
-  /* Resumen */
-  .summary { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-bottom: 20px; }
-  .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
-  .box h2 { font-size: .95rem; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
-  .box .big { font-size: 1.6rem; font-weight: 700; }
-  .box .small { color: var(--muted); font-size: .85rem; }
-  .bar { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 8px 0 4px; }
-  .bar > span { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .3s; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
-  .c-defla { background: var(--defla); }
-  .c-iso { background: var(--iso); }
-  .c-ok { background: var(--ok); }
-
-  /* Barra de controles */
-  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-  button {
-    font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line);
-    background: var(--card); color: var(--text); padding: 8px 14px;
+  /* ---------- HOY ---------- */
+  .hero { padding: 20px; border-width: 2px; }
+  .hero.defla { border-color: var(--defla); }
+  .hero.iso { border-color: var(--iso); }
+  .hero.done { border-color: var(--ok); text-align: center; }
+  .hero-tag { display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 99px; background: var(--line); color: var(--text); }
+  .hero-tag.now { background: var(--accent); color: #fff; }
+  .hero-tag.late { background: var(--bad); color: #fff; }
+  .hero-name { font-size: 1.6rem; font-weight: 800; margin: 12px 0 2px; line-height: 1.15; }
+  .hero-meta { color: var(--muted); font-size: 1.05rem; }
+  .big-btn {
+    display: block; width: 100%; margin-top: 18px; padding: 18px; border: 0; border-radius: 16px;
+    background: var(--ok); color: #fff; font-size: 1.25rem; font-weight: 800;
   }
-  button:hover { border-color: var(--muted); }
-  .tab[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .spacer { flex: 1; }
-  .link-btn { font-size: .9rem; color: var(--muted); }
+  .big-btn:active { transform: scale(.98); }
+  .hero.done .emoji { font-size: 3rem; }
+  .hero.done .hero-name { margin-top: 4px; }
 
-  /* Calendario */
-  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-  .day {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 8px; position: relative;
+  .dose-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); margin-bottom: 8px;
   }
-  .day.is-today { border: 2px solid var(--today); box-shadow: 0 0 0 4px color-mix(in srgb, var(--today) 15%, transparent); }
-  .day.is-done { background: color-mix(in srgb, var(--ok-soft) 60%, var(--card)); }
-  .day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .day-num { font-weight: 700; font-size: 1.05rem; }
-  .day-date { color: var(--muted); font-size: .9rem; text-transform: capitalize; }
-  .badge { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
-  .b-today { background: var(--today); color: #fff; }
-  .b-done { background: var(--ok-soft); color: var(--ok); }
-  .b-miss { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
-  .b-last { background: var(--defla-soft); color: var(--defla); }
+  .pill { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .pill.defla { background: var(--defla); }
+  .pill.iso { background: var(--iso); }
+  .dose-row .txt { flex: 1; min-width: 0; }
+  .dose-row .n { font-weight: 650; }
+  .dose-row .s { font-size: .88rem; color: var(--muted); }
+  .dose-row .s.ok { color: var(--ok); font-weight: 600; }
+  .dose-row .s.bad { color: var(--bad); font-weight: 600; }
+  .small-btn { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 12px; font-size: .9rem; font-weight: 600; white-space: nowrap; }
+  .small-btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .small-btn.bad { color: var(--bad); }
 
-  .dose {
-    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px;
-    cursor: pointer; user-select: none; border: 1px solid transparent;
+  .alert { background: var(--bad-soft); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+  .alert h3 { margin: 0 0 4px; font-size: 1rem; color: var(--bad); }
+  .alert .item { padding: 10px 0; border-top: 1px solid color-mix(in srgb, var(--bad) 20%, transparent); }
+  .alert .item:first-of-type { border-top: 0; }
+  .alert .q { margin-bottom: 8px; }
+  .alert .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ---------- CALENDARIO ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 8px; text-align: center; }
+  .stat b { display: block; font-size: 1.5rem; line-height: 1.1; }
+  .stat span { font-size: .78rem; color: var(--muted); }
+  .bar { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--ok); border-radius: 99px; transition: width .3s; }
+  .bar-label { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); margin: 6px 0 4px; }
+
+  .month { margin-top: 18px; }
+  .month h3 { margin: 0 0 8px; font-size: 1.05rem; text-transform: capitalize; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal .wd { text-align: center; font-size: .75rem; color: var(--muted); font-weight: 600; padding-bottom: 2px; }
+  .cell {
+    aspect-ratio: 1 / 1.1; border-radius: 12px; border: 1px solid transparent; background: transparent;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0;
+    color: var(--muted); font-size: .9rem;
   }
-  .dose.defla { background: var(--defla-soft); }
-  .dose.iso { background: var(--iso-soft); }
-  .dose input { width: 22px; height: 22px; flex: none; cursor: pointer; accent-color: var(--ok); }
-  .dose .info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-  .dose .name { font-weight: 600; font-size: .95rem; }
-  .dose .meta { font-size: .8rem; color: var(--muted); }
-  .dose.checked .name { text-decoration: line-through; text-decoration-color: var(--ok); }
-  .dose:focus-within { border-color: var(--text); }
+  .cell.off { opacity: .35; cursor: default; }
+  .cell.t { background: var(--card); border-color: var(--line); color: var(--text); font-weight: 650; }
+  .cell.complete { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+  .cell.missed { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+  .cell.today { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .dots { display: flex; gap: 4px; height: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid; }
+  .dot.defla { border-color: var(--defla); }
+  .dot.iso { border-color: var(--iso); }
+  .dot.defla.taken { background: var(--defla); }
+  .dot.iso.taken { background: var(--iso); }
+  .dot.no { background: var(--bad); border-color: var(--bad); }
+  .cell .check { font-size: .8rem; line-height: 8px; height: 8px; color: var(--ok); }
 
-  .empty { color: var(--muted); text-align: center; padding: 40px 0; grid-column: 1 / -1; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; color: var(--muted); margin-top: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid var(--line); }
 
-  /* Confirmación de reinicio */
-  .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--card);
-    border: 1px solid var(--warn); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; }
-  .confirm .danger { background: var(--warn); color: #fff; border-color: var(--warn); }
-
-  footer { margin-top: 28px; color: var(--muted); font-size: .85rem; text-align: center; }
-
-  /* Copia de seguridad */
-  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
-  .panel h3 { margin: 0 0 6px; font-size: 1rem; }
-  .panel p { margin: 0 0 10px; color: var(--muted); font-size: .9rem; }
-  .panel textarea {
-    width: 100%; min-height: 70px; font: .85rem/1.4 ui-monospace, Menlo, Consolas, monospace;
-    border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--bg); color: var(--text);
-    word-break: break-all; resize: vertical;
+  /* ---------- MÁS ---------- */
+  .more p { color: var(--muted); font-size: .92rem; margin: 0 0 10px; }
+  .more textarea {
+    width: 100%; min-height: 64px; font: .9rem/1.4 ui-monospace, Menlo, Consolas, monospace;
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--bg); color: var(--text); resize: vertical;
   }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .btn { border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+  .btn.ghost-danger { color: var(--bad); }
+  .file-btn input { display: none; }
   .msg { font-size: .9rem; }
-  .msg.ok { color: var(--ok); }
-  .msg.err { color: var(--warn); }
-  .notice { background: color-mix(in srgb, var(--warn) 12%, var(--card)); color: var(--warn);
-    border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
-  .file-label { display: inline-block; }
-  .file-label input { display: none; }
-  .file-label span { display: inline-block; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; background: var(--card); }
+  .msg.ok { color: var(--ok); } .msg.err { color: var(--bad); }
+  .info-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .info-table td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  .info-table tr:first-child td { border-top: 0; }
+  .info-table td:first-child { font-weight: 650; padding-right: 10px; }
+  .warn { background: var(--bad-soft); color: var(--bad); border-radius: 12px; padding: 10px 14px; font-size: .9rem; margin-bottom: 12px; }
+
+  /* ---------- NAV INFERIOR ---------- */
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  nav .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); height: var(--nav-h); }
+  nav button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--muted); font-size: .78rem; font-weight: 600; }
+  nav button .ic { font-size: 1.35rem; line-height: 1; filter: grayscale(1); opacity: .7; }
+  nav button[aria-current="page"] { color: var(--accent); }
+  nav button[aria-current="page"] .ic { filter: none; opacity: 1; }
+
+  /* ---------- HOJA DE DÍA ---------- */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet {
+    background: var(--bg); width: 100%; max-width: 520px; border-radius: 22px 22px 0 0;
+    padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); max-height: 85vh; overflow: auto;
+  }
+  .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .sheet-head h3 { margin: 0; font-size: 1.3rem; }
+  .close { border: 0; background: var(--line); border-radius: 50%; width: 36px; height: 36px; font-size: 1.1rem; flex: none; }
+  .seg { display: flex; gap: 6px; margin-top: 10px; }
+  .seg button { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-weight: 650; font-size: .92rem; }
+  .seg button.on-ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .seg button.on-no { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .sheet .dose-row { display: block; }
+  .sheet .dose-row .head { display: flex; align-items: center; gap: 10px; }
+
+  /* ---------- AVISO FLOTANTE ---------- */
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%); z-index: 30;
+    bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom, 0px));
+    background: var(--text); color: var(--bg); border-radius: 14px; padding: 12px 14px 12px 16px;
+    display: flex; align-items: center; gap: 14px; width: calc(100% - 32px); max-width: 488px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  }
+  .toast span { flex: 1; }
+  .toast button { border: 0; background: none; color: var(--bg); font-weight: 800; text-decoration: underline; padding: 4px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>💊 Control de medicamentos</h1>
-  <p class="sub" id="subtitle">Tratamiento de 30 días · del jueves 19 de noviembre al viernes 18 de diciembre de 2026</p>
 
-  <section class="summary" aria-label="Progreso">
-    <div class="box">
-      <h2><span class="dot c-ok"></span>Progreso total</h2>
-      <div class="big" id="p-total-txt">0 / 50</div>
-      <div class="bar"><span class="c-ok" id="p-total-bar"></span></div>
-      <div class="small" id="p-total-pct">0 % de las tomas realizadas</div>
-    </div>
-    <div class="box">
-      <h2><span class="dot c-defla"></span>Deflazacort 30 mg</h2>
-      <div class="big" id="p-defla-txt">0 / 20</div>
-      <div class="bar"><span class="c-defla" id="p-defla-bar"></span></div>
-      <div class="small">8:30 a. m. con el desayuno · hasta el 8 dic</div>
-    </div>
-    <div class="box">
-      <h2><span class="dot c-iso"></span>Isotretinoína (Reitrin) 20 mg</h2>
-      <div class="big" id="p-iso-txt">0 / 30</div>
-      <div class="bar"><span class="c-iso" id="p-iso-bar"></span></div>
-      <div class="small">2:30 p. m. con el almuerzo · hasta el 18 dic</div>
-    </div>
-    <div class="box">
-      <h2>📅 Hoy</h2>
-      <div class="big" id="today-txt">—</div>
-      <div class="small" id="today-sub"></div>
-    </div>
-  </section>
+<!-- ================= HOY ================= -->
+<main class="screen" id="tab-hoy">
+  <p class="eyebrow" id="hoy-eyebrow"></p>
+  <h1 id="hoy-title"></h1>
+  <div id="hoy-alert"></div>
+  <div id="hoy-hero"></div>
+  <h2 id="hoy-list-title">Tomas de hoy</h2>
+  <div id="hoy-list"></div>
+</main>
 
-  <div class="controls">
-    <div class="tabs" role="group" aria-label="Filtrar días">
-      <button class="tab" data-filter="all" aria-pressed="true">Todos</button>
-      <button class="tab" data-filter="past" aria-pressed="false">Anteriores</button>
-      <button class="tab" data-filter="today" aria-pressed="false">Hoy</button>
-      <button class="tab" data-filter="pending" aria-pressed="false">Pendientes</button>
-    </div>
-    <span class="spacer"></span>
-    <button id="go-today">Ir a hoy</button>
-    <button id="backup-btn">💾 Copia de seguridad</button>
-    <button id="reset" class="link-btn">Reiniciar</button>
+<!-- ================= CALENDARIO ================= -->
+<main class="screen" id="tab-cal" hidden>
+  <p class="eyebrow">Progreso del tratamiento</p>
+  <h1 id="cal-title">Calendario</h1>
+  <div class="stats">
+    <div class="stat"><b id="st-streak">0</b><span>días seguidos sin fallar</span></div>
+    <div class="stat"><b id="st-done">0</b><span>días completos</span></div>
+    <div class="stat"><b id="st-missed">0</b><span>tomas olvidadas</span></div>
   </div>
-
-  <div class="notice" id="storage-warning" hidden>
-    ⚠️ Este navegador no permite guardar datos (¿modo privado?). Las casillas se perderán al cerrar.
-    Abre la página en modo normal.
+  <div class="bar-label"><span>Tomas realizadas</span><span id="bar-txt">0 / 50</span></div>
+  <div class="bar"><span id="bar-fill" style="width:0"></span></div>
+  <div id="months"></div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--ok-soft);border-color:var(--ok)"></i>Día completo</span>
+    <span><i class="sw" style="background:var(--bad-soft);border-color:var(--bad)"></i>Falta alguna toma</span>
+    <span><i class="dot defla taken"></i>Deflazacort</span>
+    <span><i class="dot iso taken"></i>Isotretinoína</span>
+    <span><i class="dot defla"></i>Pendiente</span>
   </div>
+  <p class="eyebrow" style="margin-top:12px;font-size:.85rem">Toca un día para ver o corregir sus tomas.</p>
+</main>
 
-  <section class="panel" id="backup-panel" hidden>
-    <h3>💾 Copia de seguridad</h3>
-    <p>Guarda este código (por ejemplo, envíatelo por WhatsApp o correo). Si algún día se borran las casillas,
-       pégalo abajo en «Restaurar» y se recupera todo.</p>
+<!-- ================= MÁS ================= -->
+<main class="screen more" id="tab-mas" hidden>
+  <p class="eyebrow">Ajustes</p>
+  <h1>Más</h1>
+  <div class="warn" id="storage-warning" hidden>⚠️ Este navegador no permite guardar datos (¿modo privado?). Abre la página en modo normal.</div>
+
+  <div class="card">
+    <h2 style="margin-top:0">💾 Copia de seguridad</h2>
+    <p>Envíate este código por WhatsApp o correo de vez en cuando. Si algún día se borra todo, pégalo en «Restaurar» y vuelve.</p>
     <textarea id="backup-code" readonly aria-label="Código de copia de seguridad"></textarea>
     <div class="row">
-      <button id="copy-btn">Copiar código</button>
-      <button id="download-btn">Descargar archivo</button>
+      <button class="btn primary" id="copy-btn">Copiar código</button>
+      <button class="btn" id="download-btn">Descargar archivo</button>
       <span class="msg" id="backup-msg"></span>
     </div>
-    <h3 style="margin-top:16px">♻️ Restaurar</h3>
-    <p>Pega aquí un código guardado o elige un archivo de copia de seguridad.</p>
-    <textarea id="restore-code" aria-label="Pegar código para restaurar" placeholder="Pega el código aquí"></textarea>
-    <div class="row">
-      <button id="restore-btn">Restaurar desde código</button>
-      <label class="file-label"><input type="file" id="restore-file" accept=".json,.txt,application/json,text/plain"><span>Elegir archivo…</span></label>
-      <span class="msg" id="restore-msg"></span>
-    </div>
-  </section>
-
-  <div class="confirm" id="confirm" hidden>
-    <span>¿Borrar todas las casillas marcadas? Esto no se puede deshacer.</span>
-    <span class="spacer"></span>
-    <button id="confirm-no">Cancelar</button>
-    <button id="confirm-yes" class="danger">Sí, borrar</button>
   </div>
 
-  <main class="grid" id="grid" aria-live="polite"></main>
+  <div class="card" style="margin-top:12px">
+    <h2 style="margin-top:0">♻️ Restaurar</h2>
+    <p>Pega un código guardado o elige un archivo de copia.</p>
+    <textarea id="restore-code" placeholder="Pega el código aquí" aria-label="Código para restaurar"></textarea>
+    <div class="row">
+      <button class="btn primary" id="restore-btn">Restaurar</button>
+      <label class="btn file-btn">Elegir archivo…<input type="file" id="restore-file" accept=".json,.txt,application/json,text/plain"></label>
+      <span class="msg" id="restore-msg"></span>
+    </div>
+  </div>
 
-  <footer>Las casillas se guardan automáticamente en este navegador.</footer>
+  <div class="card" style="margin-top:12px">
+    <h2 style="margin-top:0">📋 Tratamiento</h2>
+    <table class="info-table">
+      <tr><td>Deflazacort 30 mg</td><td>8:30 a. m., con el desayuno<br>19 nov → 8 dic (20 días)</td></tr>
+      <tr><td>Isotretinoína (Reitrin) 20 mg</td><td>2:30 p. m., con el almuerzo<br>19 nov → 18 dic (30 días)</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h2 style="margin-top:0">Borrar todo</h2>
+    <p>Desmarca todas las tomas. Haz antes una copia de seguridad.</p>
+    <button class="btn ghost-danger" id="reset">Borrar todas las tomas…</button>
+    <div class="row" id="reset-confirm" hidden>
+      <span>¿Seguro? No se puede deshacer.</span>
+      <button class="btn" id="reset-no">Cancelar</button>
+      <button class="btn danger" id="reset-yes">Sí, borrar</button>
+    </div>
+  </div>
+</main>
+
+<!-- Barra inferior -->
+<nav aria-label="Secciones">
+  <div class="in">
+    <button data-tab="hoy" aria-current="page"><span class="ic">💊</span>Hoy</button>
+    <button data-tab="cal"><span class="ic">📅</span>Calendario</button>
+    <button data-tab="mas"><span class="ic">⚙️</span>Más</button>
+  </div>
+</nav>
+
+<!-- Detalle de un día -->
+<div class="overlay" id="overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-head">
+      <div><p class="eyebrow" id="sheet-sub"></p><h3 id="sheet-title"></h3></div>
+      <button class="close" id="sheet-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="sheet-body"></div>
+  </div>
 </div>
+
+<div class="toast" id="toast" hidden><span id="toast-txt"></span><button id="toast-undo">Deshacer</button></div>
 
 <script>
 (function () {
+  // ======================= DATOS DEL TRATAMIENTO =======================
   const STORAGE_KEY = 'control-medicamentos-2026-11-19';
-  const START = new Date(2026, 10, 19); // 19 nov 2026 (meses desde 0)
+  const START = new Date(2026, 10, 19); // jueves 19 nov 2026
   const TOTAL_DAYS = 30;
-
   const MEDS = [
-    { id: 'defla', name: 'Deflazacort', dose: '30 mg', time: '8:30 a. m.', note: 'con el desayuno', days: 20 },
-    { id: 'iso',   name: 'Isotretinoína (Reitrin)', dose: '20 mg', time: '2:30 p. m.', note: 'con el almuerzo', days: 30 }
+    { id: 'defla', name: 'Deflazacort', short: 'Deflazacort', dose: '30 mg', min: 8 * 60 + 30, note: 'con el desayuno', days: 20 },
+    { id: 'iso', name: 'Isotretinoína (Reitrin)', short: 'Isotretinoína', dose: '20 mg', min: 14 * 60 + 30, note: 'con el almuerzo', days: 30 }
   ];
+  const NO = 'no';            // valor guardado cuando NO se tomó
+  const LATE = 'registrada';  // tomada, pero registrada después
 
-  const fmtDate = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-  const fmtShort = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+  const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const fmtDay = d => DAYS[d.getDay()] + ' ' + d.getDate() + ' de ' + MONTHS[d.getMonth()];
+  const fmtMin = min => { const h = Math.floor(min / 60), m = min % 60; return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' a. m.' : ' p. m.'); };
+  const dayDate = i => new Date(START.getFullYear(), START.getMonth(), START.getDate() + i);
+  const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const key = (dayNum, medId) => dayNum + '-' + medId;
+  const medsOn = i => MEDS.filter(m => i < m.days);
+  const TOTAL_DOSES = MEDS.reduce((s, m) => s + m.days, 0);
 
-  // ---- Guardado (doble: localStorage + IndexedDB) ----
-  let state = {};
-  let lsOk = true;
+  function todayIndex() {
+    const n = new Date();
+    return Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - START) / 86400000);
+  }
+  const nowMin = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
 
+  // ======================= GUARDADO (localStorage + IndexedDB) =======================
+  let state = {}, lsOk = true, idbOk = false;
   function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      state = raw ? (JSON.parse(raw) || {}) : {};
-    } catch (e) { state = {}; lsOk = false; }
+    try { const raw = localStorage.getItem(STORAGE_KEY); state = raw ? (JSON.parse(raw) || {}) : {}; }
+    catch (e) { state = {}; lsOk = false; }
   }
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); lsOk = true; } catch (e) { lsOk = false; }
     idbSet(state);
-    document.getElementById('storage-warning').hidden = lsOk || idbOk;
+    setTimeout(() => { document.getElementById('storage-warning').hidden = lsOk || idbOk; }, 300);
   }
-
-  // IndexedDB: segunda copia por si la primera se pierde
-  let idbOk = false;
   function idbOpen() {
     return new Promise((resolve, reject) => {
       try {
@@ -271,223 +359,314 @@
       req.onerror = () => { resolve(null); db.close(); };
     })).catch(() => null);
   }
-
-  // Al iniciar: combinar ambas copias (nunca se pierde una casilla marcada)
   function syncCopies() {
-    return idbGet().then(fromIdb => {
-      if (fromIdb && typeof fromIdb === 'object') {
+    return idbGet().then(other => {
+      if (other && typeof other === 'object') {
         let changed = false;
-        for (const k in fromIdb) if (!state[k]) { state[k] = fromIdb[k]; changed = true; }
-        if (changed) { render(); updateProgress(); }
+        for (const k in other) if (!state[k]) { state[k] = other[k]; changed = true; }
+        if (changed) renderAll();
       }
       save();
     });
   }
-
-  // Pedir al navegador que no borre los datos automáticamente
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
-  // ---- Copia de seguridad ----
-  // Código corto: MED-<tomas de Deflazacort>-<tomas de Isotretinoína>, cada una como número en base 36
+  // ======================= ESTADO DE CADA TOMA =======================
+  // 'taken' | 'no' | 'pending' (hoy o futuro) | 'missing' (día pasado sin registrar)
+  function status(i, m) {
+    const v = state[key(i + 1, m.id)];
+    if (v === NO) return 'no';
+    if (v) return 'taken';
+    return i < todayIndex() ? 'missing' : 'pending';
+  }
+  function takenText(i, m) {
+    const v = state[key(i + 1, m.id)];
+    const d = new Date(v);
+    if (typeof v === 'string' && !isNaN(d) && sameDay(d, dayDate(i))) return 'Tomada a las ' + fmtMin(d.getHours() * 60 + d.getMinutes());
+    return 'Tomada';
+  }
+  function dayStatus(i) {
+    const st = medsOn(i).map(m => status(i, m));
+    if (st.every(s => s === 'taken')) return 'complete';
+    if (st.some(s => s === 'no' || s === 'missing')) return 'missed';
+    return 'open';
+  }
+  function setDose(i, m, value) {
+    const k = key(i + 1, m.id);
+    const prev = state[k];
+    if (value) state[k] = value; else delete state[k];
+    save(); renderAll();
+    return prev;
+  }
+
+  // ======================= PANTALLA HOY =======================
+  function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+
+  function renderHoy() {
+    const ti = todayIndex();
+    const eyebrow = document.getElementById('hoy-eyebrow');
+    const title = document.getElementById('hoy-title');
+    const hero = document.getElementById('hoy-hero');
+    const list = document.getElementById('hoy-list');
+    const listTitle = document.getElementById('hoy-list-title');
+    const alertBox = document.getElementById('hoy-alert');
+    hero.innerHTML = ''; list.innerHTML = ''; alertBox.innerHTML = '';
+    listTitle.hidden = false;
+    eyebrow.textContent = cap(fmtDay(new Date()));
+
+    // --- Antes de empezar ---
+    if (ti < 0) {
+      title.textContent = 'Todavía no empieza';
+      const first = MEDS[0];
+      hero.appendChild(el(
+        '<div class="card hero done"><div class="emoji">🗓️</div>' +
+        '<div class="hero-name">' + (ti === -1 ? 'Empieza mañana' : 'Empieza el ' + fmtDay(START)) + '</div>' +
+        '<div class="hero-meta">Primera toma: ' + first.name + ' ' + first.dose + '<br>' + fmtMin(first.min) + ', ' + first.note + '</div></div>'));
+      listTitle.hidden = true;
+      return;
+    }
+    // --- Terminado ---
+    if (ti >= TOTAL_DAYS) {
+      title.textContent = 'Tratamiento terminado';
+      const taken = countTaken();
+      hero.appendChild(el(
+        '<div class="card hero done"><div class="emoji">🎉</div><div class="hero-name">¡30 días completados!</div>' +
+        '<div class="hero-meta">' + taken + ' de ' + TOTAL_DOSES + ' tomas registradas.<br>Mira el detalle en Calendario.</div></div>'));
+      listTitle.hidden = true;
+      renderMissingAlert(alertBox, ti);
+      return;
+    }
+
+    title.textContent = 'Día ' + (ti + 1) + ' de ' + TOTAL_DAYS;
+    renderMissingAlert(alertBox, ti);
+
+    // --- Toma principal: la pendiente más cercana a la hora actual ---
+    const meds = medsOn(ti);
+    const pending = meds.filter(m => status(ti, m) === 'pending');
+    const now = nowMin();
+    if (pending.length) {
+      const m = pending.slice().sort((a, b) => Math.abs(now - a.min) - Math.abs(now - b.min))[0];
+      let tag = '<span class="hero-tag now">Toca ahora</span>';
+      if (now < m.min - 60) tag = '<span class="hero-tag">Próxima toma · ' + fmtMin(m.min) + '</span>';
+      else if (now > m.min + 120) tag = '<span class="hero-tag late">Atrasada · era a las ' + fmtMin(m.min) + '</span>';
+      const card = el(
+        '<div class="card hero ' + m.id + '">' + tag +
+        '<div class="hero-name">' + m.name + ' ' + m.dose + '</div>' +
+        '<div class="hero-meta">' + fmtMin(m.min) + ' · ' + m.note + '</div>' +
+        '<button class="big-btn">✓ Ya la tomé</button></div>');
+      card.querySelector('.big-btn').addEventListener('click', () => markTaken(ti, m));
+      hero.appendChild(card);
+    } else {
+      let next = '';
+      if (ti + 1 < TOTAL_DAYS) { const nm = medsOn(ti + 1)[0]; next = 'Mañana: ' + nm.short + ' a las ' + fmtMin(nm.min); }
+      else next = 'Era el último día del tratamiento.';
+      hero.appendChild(el(
+        '<div class="card hero done"><div class="emoji">✅</div><div class="hero-name">Listo por hoy</div>' +
+        '<div class="hero-meta">' + next + '</div></div>'));
+    }
+
+    // --- Lista de tomas de hoy ---
+    for (const m of meds) list.appendChild(doseRow(ti, m));
+  }
+
+  function doseRow(i, m) {
+    const st = status(i, m);
+    let s = '<span class="s">' + fmtMin(m.min) + ' · ' + m.note + '</span>';
+    if (st === 'taken') s = '<span class="s ok">✓ ' + takenText(i, m) + '</span>';
+    if (st === 'no') s = '<span class="s bad">✗ No la tomó</span>';
+    const row = el(
+      '<div class="dose-row"><span class="pill ' + m.id + '"></span>' +
+      '<div class="txt"><div class="n">' + m.short + ' ' + m.dose + '</div>' + s + '</div></div>');
+    if (st === 'pending') {
+      const b = el('<button class="small-btn ok">Tomada</button>');
+      b.addEventListener('click', () => markTaken(i, m));
+      row.appendChild(b);
+    } else {
+      const b = el('<button class="small-btn">Cambiar</button>');
+      b.addEventListener('click', () => openDay(i));
+      row.appendChild(b);
+    }
+    return row;
+  }
+
+  function renderMissingAlert(box, ti) {
+    const missing = [];
+    for (let i = 0; i < Math.min(ti, TOTAL_DAYS); i++) for (const m of medsOn(i)) if (status(i, m) === 'missing') missing.push({ i, m });
+    if (!missing.length) return;
+    const a = el('<div class="alert"><h3>⚠️ Falta registrar ' + (missing.length === 1 ? '1 toma' : missing.length + ' tomas') + '</h3></div>');
+    for (const { i, m } of missing.slice(0, 3)) {
+      const when = i === ti - 1 ? 'Ayer' : cap(fmtDay(dayDate(i)));
+      const it = el(
+        '<div class="item"><div class="q"><b>' + when + '</b> · ' + m.short + ' (' + fmtMin(m.min) + '). ¿La tomó?</div>' +
+        '<div class="btns"><button class="small-btn ok">Sí, la tomó</button><button class="small-btn bad">No la tomó</button></div></div>');
+      const [yes, no] = it.querySelectorAll('button');
+      yes.addEventListener('click', () => setDose(i, m, LATE));
+      no.addEventListener('click', () => setDose(i, m, NO));
+      a.appendChild(it);
+    }
+    if (missing.length > 3) a.appendChild(el('<div class="item" style="font-size:.9rem">Y ' + (missing.length - 3) + ' más. Puedes corregirlas en Calendario.</div>'));
+    box.appendChild(a);
+  }
+
+  // ======================= MARCAR + DESHACER =======================
+  let toastTimer = null, undoFn = null;
+  function markTaken(i, m) {
+    const prev = setDose(i, m, new Date().toISOString());
+    showToast('✓ ' + m.short + ' registrada', () => setDose(i, m, prev));
+  }
+  function showToast(text, undo) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-txt').textContent = text;
+    undoFn = undo; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; undoFn = null; }, 6000);
+  }
+  document.getElementById('toast-undo').addEventListener('click', () => {
+    if (undoFn) undoFn();
+    undoFn = null; document.getElementById('toast').hidden = true;
+  });
+
+  // ======================= CALENDARIO =======================
+  function countTaken() {
+    let n = 0;
+    for (let i = 0; i < TOTAL_DAYS; i++) for (const m of medsOn(i)) if (status(i, m) === 'taken') n++;
+    return n;
+  }
+  function renderCal() {
+    const ti = todayIndex();
+    let done = 0, missed = 0;
+    for (let i = 0; i < TOTAL_DAYS; i++) {
+      if (dayStatus(i) === 'complete') done++;
+      for (const m of medsOn(i)) { const s = status(i, m); if (s === 'no' || s === 'missing') missed++; }
+    }
+    // Racha: días completos seguidos hasta hoy (o hasta ayer si hoy aún no está completo)
+    let streak = 0;
+    let i = Math.min(ti, TOTAL_DAYS - 1);
+    if (i >= 0 && dayStatus(i) !== 'complete') i--;
+    for (; i >= 0 && dayStatus(i) === 'complete'; i--) streak++;
+
+    const taken = countTaken();
+    document.getElementById('st-streak').textContent = streak;
+    document.getElementById('st-done').textContent = done + '/30';
+    document.getElementById('st-missed').textContent = missed;
+    document.getElementById('bar-txt').textContent = taken + ' / ' + TOTAL_DOSES;
+    document.getElementById('bar-fill').style.width = (taken / TOTAL_DOSES * 100) + '%';
+    document.getElementById('cal-title').textContent =
+      ti < 0 ? 'Calendario' : ti >= TOTAL_DAYS ? 'Tratamiento terminado' : 'Día ' + (ti + 1) + ' de ' + TOTAL_DAYS;
+
+    const wrap = document.getElementById('months');
+    wrap.innerHTML = '';
+    const end = dayDate(TOTAL_DAYS - 1);
+    for (let y = START.getFullYear(), mo = START.getMonth(); y < end.getFullYear() || (y === end.getFullYear() && mo <= end.getMonth()); mo === 11 ? (y++, mo = 0) : mo++) {
+      const sec = el('<section class="month"><h3>' + MONTHS[mo] + ' ' + y + '</h3><div class="cal"></div></section>');
+      const grid = sec.querySelector('.cal');
+      ['L', 'M', 'X', 'J', 'V', 'S', 'D'].forEach(d => grid.appendChild(el('<div class="wd">' + d + '</div>')));
+      const first = new Date(y, mo, 1);
+      const offset = (first.getDay() + 6) % 7; // lunes = 0
+      for (let k = 0; k < offset; k++) grid.appendChild(el('<div></div>'));
+      const nDays = new Date(y, mo + 1, 0).getDate();
+      for (let d = 1; d <= nDays; d++) {
+        const date = new Date(y, mo, d);
+        const idx = Math.round((date - START) / 86400000);
+        if (idx < 0 || idx >= TOTAL_DAYS) { grid.appendChild(el('<div class="cell off">' + d + '</div>')); continue; }
+        const ds = dayStatus(idx);
+        let cls = 'cell t';
+        if (ds === 'complete') cls += ' complete';
+        else if (ds === 'missed') cls += ' missed';
+        if (idx === ti) cls += ' today';
+        let mark = '';
+        if (ds === 'complete') mark = '<span class="check">✓</span>';
+        else {
+          mark = '<span class="dots">' + medsOn(idx).map(m => {
+            const s = status(idx, m);
+            return '<i class="dot ' + m.id + (s === 'taken' ? ' taken' : s === 'no' || s === 'missing' ? ' no' : '') + '"></i>';
+          }).join('') + '</span>';
+        }
+        const b = el('<button class="' + cls + '" aria-label="Día ' + (idx + 1) + ', ' + fmtDay(date) + '">' + d + mark + '</button>');
+        b.addEventListener('click', () => openDay(idx));
+        grid.appendChild(b);
+      }
+      wrap.appendChild(sec);
+    }
+  }
+
+  // ======================= DETALLE DE UN DÍA =======================
+  let openIdx = null;
+  function openDay(i) { openIdx = i; renderSheet(); document.getElementById('overlay').hidden = false; }
+  function closeDay() { openIdx = null; document.getElementById('overlay').hidden = true; }
+  function renderSheet() {
+    if (openIdx === null) return;
+    const i = openIdx, ti = todayIndex();
+    document.getElementById('sheet-sub').textContent = 'Día ' + (i + 1) + ' de ' + TOTAL_DAYS + (i === ti ? ' · hoy' : '');
+    document.getElementById('sheet-title').textContent = cap(fmtDay(dayDate(i)));
+    const body = document.getElementById('sheet-body');
+    body.innerHTML = '';
+    for (const m of medsOn(i)) {
+      const st = status(i, m);
+      let s = fmtMin(m.min) + ' · ' + m.note;
+      if (st === 'taken') s = '✓ ' + takenText(i, m);
+      if (st === 'no') s = '✗ No la tomó';
+      if (st === 'missing') s = 'Sin registrar';
+      const row = el(
+        '<div class="dose-row"><div class="head"><span class="pill ' + m.id + '"></span><div class="txt">' +
+        '<div class="n">' + m.name + ' ' + m.dose + '</div><div class="s ' + (st === 'taken' ? 'ok' : st === 'pending' ? '' : 'bad') + '">' + s + '</div></div></div>' +
+        '<div class="seg"><button class="' + (st === 'taken' ? 'on-ok' : '') + '">✓ Tomada</button>' +
+        '<button class="' + (st === 'no' ? 'on-no' : '') + '">✗ No la tomó</button></div></div>');
+      const [bOk, bNo] = row.querySelectorAll('.seg button');
+      bOk.addEventListener('click', () => setDose(i, m, st === 'taken' ? null : (i === ti ? new Date().toISOString() : LATE)));
+      bNo.addEventListener('click', () => setDose(i, m, st === 'no' ? null : NO));
+      body.appendChild(row);
+    }
+    if (i > ti) body.appendChild(el('<p class="eyebrow" style="font-size:.85rem">Este día todavía no ha llegado.</p>'));
+  }
+  document.getElementById('sheet-close').addEventListener('click', closeDay);
+  document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeDay(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDay(); });
+
+  // ======================= COPIA DE SEGURIDAD =======================
+  // Código: MED-<tomadas Deflazacort>-<tomadas Isotretinoína>[-<no tomadas D>-<no tomadas I>]
+  function bits(pred) {
+    return MEDS.map(m => { let n = 0n; for (let d = 1; d <= m.days; d++) if (pred(state[key(d, m.id)])) n |= 1n << BigInt(d - 1); return n.toString(36); });
+  }
   function makeCode() {
-    return 'MED-' + MEDS.map(m => {
-      let n = 0n;
-      for (let d = 1; d <= m.days; d++) if (state[key(d, m.id)]) n |= 1n << BigInt(d - 1);
-      return n.toString(36);
-    }).join('-');
+    const taken = bits(v => v && v !== NO), no = bits(v => v === NO);
+    return 'MED-' + taken.join('-') + (no.some(x => x !== '0') ? '-' + no.join('-') : '');
   }
   function parseCode(text) {
     text = String(text).trim();
-    // ¿Archivo JSON?
     if (text.startsWith('{')) {
-      const obj = JSON.parse(text);
-      const data = obj.tomas || obj;
-      const out = {};
+      const obj = JSON.parse(text), data = obj.tomas || obj, out = {};
       for (const k in data) if (/^\d+-(defla|iso)$/.test(k) && data[k]) out[k] = data[k];
       return out;
     }
-    const m = text.toUpperCase().match(/MED-([0-9A-Z]+)-([0-9A-Z]+)/);
-    if (!m) throw new Error('código no válido');
+    const mt = text.toUpperCase().match(/MED-([0-9A-Z]+)-([0-9A-Z]+)(?:-([0-9A-Z]+)-([0-9A-Z]+))?/);
+    if (!mt) throw new Error('código no válido');
     const out = {};
-    [m[1], m[2]].forEach((part, i) => {
+    const apply = (parts, value) => parts.forEach((part, idx) => {
       let n = 0n;
       for (const ch of part.toLowerCase()) n = n * 36n + BigInt(parseInt(ch, 36));
-      for (let d = 1; d <= MEDS[i].days; d++) if ((n >> BigInt(d - 1)) & 1n) out[key(d, MEDS[i].id)] = 'restaurado';
+      for (let d = 1; d <= MEDS[idx].days; d++) if ((n >> BigInt(d - 1)) & 1n) out[key(d, MEDS[idx].id)] = value;
     });
+    if (mt[3]) apply([mt[3], mt[4]], NO);
+    apply([mt[1], mt[2]], LATE);
     return out;
   }
-  function restore(text, msgEl) {
+  function restore(text) {
+    const msg = document.getElementById('restore-msg');
     try {
       const data = parseCode(text);
-      const n = Object.keys(data).length;
       for (const k in data) if (!state[k]) state[k] = data[k];
-      save(); render(); updateProgress(); refreshBackup();
-      msgEl.className = 'msg ok';
-      msgEl.textContent = '✓ Restaurado (' + n + ' tomas en la copia).';
+      save(); renderAll();
+      msg.className = 'msg ok'; msg.textContent = '✓ Restaurado (' + Object.keys(data).length + ' tomas en la copia).';
     } catch (e) {
-      msgEl.className = 'msg err';
-      msgEl.textContent = 'No se pudo leer el código. Revisa que esté completo.';
+      msg.className = 'msg err'; msg.textContent = 'No se pudo leer. Revisa que el código esté completo.';
     }
   }
-  function refreshBackup() {
-    document.getElementById('backup-code').value = makeCode();
-  }
-
-  // ---- Días del tratamiento ----
-  function dayDate(i) { return new Date(START.getFullYear(), START.getMonth(), START.getDate() + i); }
-  function todayIndex() {
-    const now = new Date();
-    const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return Math.round((t - START) / 86400000); // 0 = día 1
-  }
-  const days = Array.from({ length: TOTAL_DAYS }, (_, i) => ({
-    index: i,
-    num: i + 1,
-    date: dayDate(i),
-    meds: MEDS.filter(m => i < m.days)
-  }));
-
-  const key = (dayNum, medId) => dayNum + '-' + medId;
-
-  // ---- Interfaz ----
-  const grid = document.getElementById('grid');
-  let filter = 'all';
-
-  function render() {
-    const ti = todayIndex();
-    grid.innerHTML = '';
-    const visible = days.filter(d =>
-      filter === 'all' ? true :
-      filter === 'past' ? d.index < ti :
-      filter === 'today' ? d.index === ti :
-      d.index >= ti // pendientes: hoy y siguientes
-    );
-
-    if (!visible.length) {
-      const p = document.createElement('p');
-      p.className = 'empty';
-      p.textContent =
-        filter === 'past' ? 'Todavía no hay días anteriores.' :
-        filter === 'today' ? (ti < 0 ? 'El tratamiento aún no ha comenzado.' : 'El tratamiento ya terminó.') :
-        'No quedan días pendientes. ¡Tratamiento completado!';
-      grid.appendChild(p);
-    }
-
-    for (const d of visible) {
-      const done = d.meds.every(m => state[key(d.num, m.id)]);
-      const card = document.createElement('article');
-      card.className = 'day' + (d.index === ti ? ' is-today' : '') + (done ? ' is-done' : '');
-      card.id = 'dia-' + d.num;
-
-      let badge = '';
-      if (d.index === ti) badge = '<span class="badge b-today">Hoy</span>';
-      else if (done) badge = '<span class="badge b-done">✓ Completo</span>';
-      else if (d.index < ti) badge = '<span class="badge b-miss">Falta marcar</span>';
-      else if (d.num === 20) badge = '<span class="badge b-last">Última de Deflazacort</span>';
-
-      card.innerHTML =
-        '<div class="day-head"><span class="day-num">Día ' + d.num + '</span>' + badge + '</div>' +
-        '<div class="day-date">' + fmtDate.format(d.date) + '</div>';
-
-      for (const m of d.meds) {
-        const k = key(d.num, m.id);
-        const label = document.createElement('label');
-        label.className = 'dose ' + m.id + (state[k] ? ' checked' : '');
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = !!state[k];
-        cb.setAttribute('aria-label', m.name + ' día ' + d.num);
-        cb.addEventListener('change', () => {
-          if (cb.checked) state[k] = new Date().toISOString(); else delete state[k];
-          save();
-          render();
-          updateProgress();
-        });
-        const info = document.createElement('span');
-        info.className = 'info';
-        info.innerHTML = '<span class="name"></span><span class="meta"></span>';
-        info.firstChild.textContent = m.name + ' · ' + m.dose;
-        info.lastChild.textContent = m.time + ' ' + m.note;
-        label.append(cb, info);
-        card.appendChild(label);
-      }
-      grid.appendChild(card);
-    }
-  }
-
-  function setBar(id, done, total) {
-    document.getElementById(id + '-txt').textContent = done + ' / ' + total;
-    document.getElementById(id + '-bar').style.width = (total ? done / total * 100 : 0) + '%';
-  }
-
-  function updateProgress() {
-    refreshBackup();
-    let total = 0, done = 0;
-    for (const m of MEDS) {
-      let md = 0;
-      for (let n = 1; n <= m.days; n++) if (state[key(n, m.id)]) md++;
-      setBar('p-' + m.id, md, m.days);
-      total += m.days; done += md;
-    }
-    setBar('p-total', done, total);
-    document.getElementById('p-total-pct').textContent = Math.round(done / total * 100) + ' % de las tomas realizadas';
-
-    const ti = todayIndex();
-    const tt = document.getElementById('today-txt');
-    const ts = document.getElementById('today-sub');
-    if (ti < 0) {
-      tt.textContent = 'Aún no empieza';
-      ts.textContent = 'Comienza el ' + fmtDate.format(START);
-    } else if (ti >= TOTAL_DAYS) {
-      tt.textContent = 'Terminado';
-      ts.textContent = 'El tratamiento finalizó el ' + fmtDate.format(dayDate(TOTAL_DAYS - 1));
-    } else {
-      const d = days[ti];
-      const pending = d.meds.filter(m => !state[key(d.num, m.id)]);
-      tt.textContent = 'Día ' + d.num + ' de ' + TOTAL_DAYS;
-      ts.textContent = fmtShort.format(d.date) + ' · ' +
-        (pending.length ? 'Pendiente: ' + pending.map(m => m.name.split(' ')[0] + ' (' + m.time + ')').join(', ')
-                        : '✓ Todas las tomas de hoy hechas');
-    }
-  }
-
-  // ---- Controles ----
-  document.querySelectorAll('.tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      filter = btn.dataset.filter;
-      document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
-      render();
-    });
-  });
-
-  document.getElementById('go-today').addEventListener('click', () => {
-    const ti = todayIndex();
-    if (filter !== 'all') document.querySelector('.tab[data-filter="all"]').click();
-    const n = Math.min(Math.max(ti, 0), TOTAL_DAYS - 1) + 1;
-    const el = document.getElementById('dia-' + n);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
-
-  const confirmBox = document.getElementById('confirm');
-  document.getElementById('reset').addEventListener('click', () => { confirmBox.hidden = false; });
-  document.getElementById('confirm-no').addEventListener('click', () => { confirmBox.hidden = true; });
-  document.getElementById('confirm-yes').addEventListener('click', () => {
-    state = {}; save(); confirmBox.hidden = true; render(); updateProgress();
-  });
-
-  // Panel de copia de seguridad
-  const backupPanel = document.getElementById('backup-panel');
-  document.getElementById('backup-btn').addEventListener('click', () => {
-    backupPanel.hidden = !backupPanel.hidden;
-    if (!backupPanel.hidden) { refreshBackup(); backupPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-  });
   document.getElementById('copy-btn').addEventListener('click', () => {
-    const ta = document.getElementById('backup-code');
-    const msg = document.getElementById('backup-msg');
-    const done = () => { msg.className = 'msg ok'; msg.textContent = '✓ Copiado'; };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(ta.value).then(done, () => { ta.select(); msg.textContent = 'Selecciónalo y cópialo manualmente.'; });
-    } else { ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} }
+    const ta = document.getElementById('backup-code'), msg = document.getElementById('backup-msg');
+    const ok = () => { msg.className = 'msg ok'; msg.textContent = '✓ Copiado'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok, () => { ta.select(); });
+    else { ta.select(); try { document.execCommand('copy'); ok(); } catch (e) {} }
   });
   document.getElementById('download-btn').addEventListener('click', () => {
     const data = JSON.stringify({ app: 'control-medicamentos', inicio: '2026-11-19', guardado: new Date().toISOString(), tomas: state }, null, 2);
@@ -497,31 +676,43 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
-  document.getElementById('restore-btn').addEventListener('click', () => {
-    restore(document.getElementById('restore-code').value, document.getElementById('restore-msg'));
-  });
+  document.getElementById('restore-btn').addEventListener('click', () => restore(document.getElementById('restore-code').value));
   document.getElementById('restore-file').addEventListener('change', e => {
     const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    f.text().then(t => restore(t, document.getElementById('restore-msg')));
+    if (f) f.text().then(restore);
     e.target.value = '';
   });
+  document.getElementById('reset').addEventListener('click', () => { document.getElementById('reset-confirm').hidden = false; });
+  document.getElementById('reset-no').addEventListener('click', () => { document.getElementById('reset-confirm').hidden = true; });
+  document.getElementById('reset-yes').addEventListener('click', () => {
+    state = {}; save(); renderAll(); document.getElementById('reset-confirm').hidden = true;
+  });
 
-  // Si otra pestaña cambia los datos, sincronizar
-  window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { load(); render(); updateProgress(); } });
+  // ======================= NAVEGACIÓN =======================
+  const tabs = { hoy: 'tab-hoy', cal: 'tab-cal', mas: 'tab-mas' };
+  function showTab(name) {
+    for (const t in tabs) document.getElementById(tabs[t]).hidden = t !== name;
+    document.querySelectorAll('nav button').forEach(b => {
+      if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
-  // Al volver a la página (p. ej. al día siguiente), refrescar "hoy"
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); updateProgress(); } });
+  // ======================= ARRANQUE =======================
+  function renderAll() {
+    renderHoy(); renderCal(); renderSheet();
+    document.getElementById('backup-code').value = makeCode();
+  }
+  window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { load(); renderAll(); } });
+  // Al volver a abrir la app: siempre a "Hoy" y con la hora actualizada
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderAll(); if (openIdx === null) showTab('hoy'); } });
+  setInterval(() => { if (!document.hidden) renderHoy(); }, 60000);
 
   load();
-  render();
-  updateProgress();
+  renderAll();
   syncCopies();
-
-  // Funcionar sin conexión desde la pantalla de inicio
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
-  }
+  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 })();
 </script>
 </body>
