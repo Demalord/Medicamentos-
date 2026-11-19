@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control de Medicamentos</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2f6fdb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Medicamentos">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1d2330;
+    --muted: #667085;
+    --line: #e3e6ec;
+    --defla: #2f6fdb;
+    --defla-soft: #e8f0fd;
+    --iso: #c2410c;
+    --iso-soft: #fdeee6;
+    --ok: #15803d;
+    --ok-soft: #e7f6ec;
+    --today: #7c3aed;
+    --warn: #b42318;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b2029; --text: #e7eaf0; --muted: #98a2b3; --line: #2c3340;
+      --defla: #7aa7ff; --defla-soft: #1d2a44; --iso: #ff9a66; --iso-soft: #3a2519;
+      --ok: #4ade80; --ok-soft: #173224; --today: #a78bfa; --warn: #f97066;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap {
+    max-width: 1100px; margin: 0 auto;
+    padding: calc(20px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+             calc(48px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+
+  /* Resumen */
+  .summary { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-bottom: 20px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .box h2 { font-size: .95rem; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+  .box .big { font-size: 1.6rem; font-weight: 700; }
+  .box .small { color: var(--muted); font-size: .85rem; }
+  .bar { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 8px 0 4px; }
+  .bar > span { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .3s; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .c-defla { background: var(--defla); }
+  .c-iso { background: var(--iso); }
+  .c-ok { background: var(--ok); }
+
+  /* Barra de controles */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); padding: 8px 14px;
+  }
+  button:hover { border-color: var(--muted); }
+  .tab[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .spacer { flex: 1; }
+  .link-btn { font-size: .9rem; color: var(--muted); }
+
+  /* Calendario */
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .day {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px; position: relative;
+  }
+  .day.is-today { border: 2px solid var(--today); box-shadow: 0 0 0 4px color-mix(in srgb, var(--today) 15%, transparent); }
+  .day.is-done { background: color-mix(in srgb, var(--ok-soft) 60%, var(--card)); }
+  .day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .day-num { font-weight: 700; font-size: 1.05rem; }
+  .day-date { color: var(--muted); font-size: .9rem; text-transform: capitalize; }
+  .badge { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .b-today { background: var(--today); color: #fff; }
+  .b-done { background: var(--ok-soft); color: var(--ok); }
+  .b-miss { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
+  .b-last { background: var(--defla-soft); color: var(--defla); }
+
+  .dose {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px;
+    cursor: pointer; user-select: none; border: 1px solid transparent;
+  }
+  .dose.defla { background: var(--defla-soft); }
+  .dose.iso { background: var(--iso-soft); }
+  .dose input { width: 22px; height: 22px; flex: none; cursor: pointer; accent-color: var(--ok); }
+  .dose .info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+  .dose .name { font-weight: 600; font-size: .95rem; }
+  .dose .meta { font-size: .8rem; color: var(--muted); }
+  .dose.checked .name { text-decoration: line-through; text-decoration-color: var(--ok); }
+  .dose:focus-within { border-color: var(--text); }
+
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; grid-column: 1 / -1; }
+
+  /* Confirmación de reinicio */
+  .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--card);
+    border: 1px solid var(--warn); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; }
+  .confirm .danger { background: var(--warn); color: #fff; border-color: var(--warn); }
+
+  footer { margin-top: 28px; color: var(--muted); font-size: .85rem; text-align: center; }
+
+  /* Copia de seguridad */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+  .panel h3 { margin: 0 0 6px; font-size: 1rem; }
+  .panel p { margin: 0 0 10px; color: var(--muted); font-size: .9rem; }
+  .panel textarea {
+    width: 100%; min-height: 70px; font: .85rem/1.4 ui-monospace, Menlo, Consolas, monospace;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--bg); color: var(--text);
+    word-break: break-all; resize: vertical;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+  .msg { font-size: .9rem; }
+  .msg.ok { color: var(--ok); }
+  .msg.err { color: var(--warn); }
+  .notice { background: color-mix(in srgb, var(--warn) 12%, var(--card)); color: var(--warn);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
+  .file-label { display: inline-block; }
+  .file-label input { display: none; }
+  .file-label span { display: inline-block; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; background: var(--card); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💊 Control de medicamentos</h1>
+  <p class="sub" id="subtitle">Tratamiento de 30 días · del jueves 19 de noviembre al viernes 18 de diciembre de 2026</p>
+
+  <section class="summary" aria-label="Progreso">
+    <div class="box">
+      <h2><span class="dot c-ok"></span>Progreso total</h2>
+      <div class="big" id="p-total-txt">0 / 50</div>
+      <div class="bar"><span class="c-ok" id="p-total-bar"></span></div>
+      <div class="small" id="p-total-pct">0 % de las tomas realizadas</div>
+    </div>
+    <div class="box">
+      <h2><span class="dot c-defla"></span>Deflazacort 30 mg</h2>
+      <div class="big" id="p-defla-txt">0 / 20</div>
+      <div class="bar"><span class="c-defla" id="p-defla-bar"></span></div>
+      <div class="small">8:30 a. m. con el desayuno · hasta el 8 dic</div>
+    </div>
+    <div class="box">
+      <h2><span class="dot c-iso"></span>Isotretinoína (Reitrin) 20 mg</h2>
+      <div class="big" id="p-iso-txt">0 / 30</div>
+      <div class="bar"><span class="c-iso" id="p-iso-bar"></span></div>
+      <div class="small">2:30 p. m. con el almuerzo · hasta el 18 dic</div>
+    </div>
+    <div class="box">
+      <h2>📅 Hoy</h2>
+      <div class="big" id="today-txt">—</div>
+      <div class="small" id="today-sub"></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <div class="tabs" role="group" aria-label="Filtrar días">
+      <button class="tab" data-filter="all" aria-pressed="true">Todos</button>
+      <button class="tab" data-filter="past" aria-pressed="false">Anteriores</button>
+      <button class="tab" data-filter="today" aria-pressed="false">Hoy</button>
+      <button class="tab" data-filter="pending" aria-pressed="false">Pendientes</button>
+    </div>
+    <span class="spacer"></span>
+    <button id="go-today">Ir a hoy</button>
+    <button id="backup-btn">💾 Copia de seguridad</button>
+    <button id="reset" class="link-btn">Reiniciar</button>
+  </div>
+
+  <div class="notice" id="storage-warning" hidden>
+    ⚠️ Este navegador no permite guardar datos (¿modo privado?). Las casillas se perderán al cerrar.
+    Abre la página en modo normal.
+  </div>
+
+  <section class="panel" id="backup-panel" hidden>
+    <h3>💾 Copia de seguridad</h3>
+    <p>Guarda este código (por ejemplo, envíatelo por WhatsApp o correo). Si algún día se borran las casillas,
+       pégalo abajo en «Restaurar» y se recupera todo.</p>
+    <textarea id="backup-code" readonly aria-label="Código de copia de seguridad"></textarea>
+    <div class="row">
+      <button id="copy-btn">Copiar código</button>
+      <button id="download-btn">Descargar archivo</button>
+      <span class="msg" id="backup-msg"></span>
+    </div>
+    <h3 style="margin-top:16px">♻️ Restaurar</h3>
+    <p>Pega aquí un código guardado o elige un archivo de copia de seguridad.</p>
+    <textarea id="restore-code" aria-label="Pegar código para restaurar" placeholder="Pega el código aquí"></textarea>
+    <div class="row">
+      <button id="restore-btn">Restaurar desde código</button>
+      <label class="file-label"><input type="file" id="restore-file" accept=".json,.txt,application/json,text/plain"><span>Elegir archivo…</span></label>
+      <span class="msg" id="restore-msg"></span>
+    </div>
+  </section>
+
+  <div class="confirm" id="confirm" hidden>
+    <span>¿Borrar todas las casillas marcadas? Esto no se puede deshacer.</span>
+    <span class="spacer"></span>
+    <button id="confirm-no">Cancelar</button>
+    <button id="confirm-yes" class="danger">Sí, borrar</button>
+  </div>
+
+  <main class="grid" id="grid" aria-live="polite"></main>
+
+  <footer>Las casillas se guardan automáticamente en este navegador.</footer>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'control-medicamentos-2026-11-19';
+  const START = new Date(2026, 10, 19); // 19 nov 2026 (meses desde 0)
+  const TOTAL_DAYS = 30;
+
+  const MEDS = [
+    { id: 'defla', name: 'Deflazacort', dose: '30 mg', time: '8:30 a. m.', note: 'con el desayuno', days: 20 },
+    { id: 'iso',   name: 'Isotretinoína (Reitrin)', dose: '20 mg', time: '2:30 p. m.', note: 'con el almuerzo', days: 30 }
+  ];
+
+  const fmtDate = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  const fmtShort = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  // ---- Guardado (doble: localStorage + IndexedDB) ----
+  let state = {};
+  let lsOk = true;
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      state = raw ? (JSON.parse(raw) || {}) : {};
+    } catch (e) { state = {}; lsOk = false; }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); lsOk = true; } catch (e) { lsOk = false; }
+    idbSet(state);
+    document.getElementById('storage-warning').hidden = lsOk || idbOk;
+  }
+
+  // IndexedDB: segunda copia por si la primera se pierde
+  let idbOk = false;
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open('medicamentos', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('kv');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      } catch (e) { reject(e); }
+    });
+  }
+  function idbSet(value) {
+    idbOpen().then(db => {
+      const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(JSON.parse(JSON.stringify(value)), STORAGE_KEY);
+      tx.oncomplete = () => { idbOk = true; db.close(); };
+    }).catch(() => { idbOk = false; });
+  }
+  function idbGet() {
+    return idbOpen().then(db => new Promise(resolve => {
+      const req = db.transaction('kv', 'readonly').objectStore('kv').get(STORAGE_KEY);
+      req.onsuccess = () => { idbOk = true; resolve(req.result || null); db.close(); };
+      req.onerror = () => { resolve(null); db.close(); };
+    })).catch(() => null);
+  }
+
+  // Al iniciar: combinar ambas copias (nunca se pierde una casilla marcada)
+  function syncCopies() {
+    return idbGet().then(fromIdb => {
+      if (fromIdb && typeof fromIdb === 'object') {
+        let changed = false;
+        for (const k in fromIdb) if (!state[k]) { state[k] = fromIdb[k]; changed = true; }
+        if (changed) { render(); updateProgress(); }
+      }
+      save();
+    });
+  }
+
+  // Pedir al navegador que no borre los datos automáticamente
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+
+  // ---- Copia de seguridad ----
+  // Código corto: MED-<tomas de Deflazacort>-<tomas de Isotretinoína>, cada una como número en base 36
+  function makeCode() {
+    return 'MED-' + MEDS.map(m => {
+      let n = 0n;
+      for (let d = 1; d <= m.days; d++) if (state[key(d, m.id)]) n |= 1n << BigInt(d - 1);
+      return n.toString(36);
+    }).join('-');
+  }
+  function parseCode(text) {
+    text = String(text).trim();
+    // ¿Archivo JSON?
+    if (text.startsWith('{')) {
+      const obj = JSON.parse(text);
+      const data = obj.tomas || obj;
+      const out = {};
+      for (const k in data) if (/^\d+-(defla|iso)$/.test(k) && data[k]) out[k] = data[k];
+      return out;
+    }
+    const m = text.toUpperCase().match(/MED-([0-9A-Z]+)-([0-9A-Z]+)/);
+    if (!m) throw new Error('código no válido');
+    const out = {};
+    [m[1], m[2]].forEach((part, i) => {
+      let n = 0n;
+      for (const ch of part.toLowerCase()) n = n * 36n + BigInt(parseInt(ch, 36));
+      for (let d = 1; d <= MEDS[i].days; d++) if ((n >> BigInt(d - 1)) & 1n) out[key(d, MEDS[i].id)] = 'restaurado';
+    });
+    return out;
+  }
+  function restore(text, msgEl) {
+    try {
+      const data = parseCode(text);
+      const n = Object.keys(data).length;
+      for (const k in data) if (!state[k]) state[k] = data[k];
+      save(); render(); updateProgress(); refreshBackup();
+      msgEl.className = 'msg ok';
+      msgEl.textContent = '✓ Restaurado (' + n + ' tomas en la copia).';
+    } catch (e) {
+      msgEl.className = 'msg err';
+      msgEl.textContent = 'No se pudo leer el código. Revisa que esté completo.';
+    }
+  }
+  function refreshBackup() {
+    document.getElementById('backup-code').value = makeCode();
+  }
+
+  // ---- Días del tratamiento ----
+  function dayDate(i) { return new Date(START.getFullYear(), START.getMonth(), START.getDate() + i); }
+  function todayIndex() {
+    const now = new Date();
+    const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((t - START) / 86400000); // 0 = día 1
+  }
+  const days = Array.from({ length: TOTAL_DAYS }, (_, i) => ({
+    index: i,
+    num: i + 1,
+    date: dayDate(i),
+    meds: MEDS.filter(m => i < m.days)
+  }));
+
+  const key = (dayNum, medId) => dayNum + '-' + medId;
+
+  // ---- Interfaz ----
+  const grid = document.getElementById('grid');
+  let filter = 'all';
+
+  function render() {
+    const ti = todayIndex();
+    grid.innerHTML = '';
+    const visible = days.filter(d =>
+      filter === 'all' ? true :
+      filter === 'past' ? d.index < ti :
+      filter === 'today' ? d.index === ti :
+      d.index >= ti // pendientes: hoy y siguientes
+    );
+
+    if (!visible.length) {
+      const p = document.createElement('p');
+      p.className = 'empty';
+      p.textContent =
+        filter === 'past' ? 'Todavía no hay días anteriores.' :
+        filter === 'today' ? (ti < 0 ? 'El tratamiento aún no ha comenzado.' : 'El tratamiento ya terminó.') :
+        'No quedan días pendientes. ¡Tratamiento completado!';
+      grid.appendChild(p);
+    }
+
+    for (const d of visible) {
+      const done = d.meds.every(m => state[key(d.num, m.id)]);
+      const card = document.createElement('article');
+      card.className = 'day' + (d.index === ti ? ' is-today' : '') + (done ? ' is-done' : '');
+      card.id = 'dia-' + d.num;
+
+      let badge = '';
+      if (d.index === ti) badge = '<span class="badge b-today">Hoy</span>';
+      else if (done) badge = '<span class="badge b-done">✓ Completo</span>';
+      else if (d.index < ti) badge = '<span class="badge b-miss">Falta marcar</span>';
+      else if (d.num === 20) badge = '<span class="badge b-last">Última de Deflazacort</span>';
+
+      card.innerHTML =
+        '<div class="day-head"><span class="day-num">Día ' + d.num + '</span>' + badge + '</div>' +
+        '<div class="day-date">' + fmtDate.format(d.date) + '</div>';
+
+      for (const m of d.meds) {
+        const k = key(d.num, m.id);
+        const label = document.createElement('label');
+        label.className = 'dose ' + m.id + (state[k] ? ' checked' : '');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!state[k];
+        cb.setAttribute('aria-label', m.name + ' día ' + d.num);
+        cb.addEventListener('change', () => {
+          if (cb.checked) state[k] = new Date().toISOString(); else delete state[k];
+          save();
+          render();
+          updateProgress();
+        });
+        const info = document.createElement('span');
+        info.className = 'info';
+        info.innerHTML = '<span class="name"></span><span class="meta"></span>';
+        info.firstChild.textContent = m.name + ' · ' + m.dose;
+        info.lastChild.textContent = m.time + ' ' + m.note;
+        label.append(cb, info);
+        card.appendChild(label);
+      }
+      grid.appendChild(card);
+    }
+  }
+
+  function setBar(id, done, total) {
+    document.getElementById(id + '-txt').textContent = done + ' / ' + total;
+    document.getElementById(id + '-bar').style.width = (total ? done / total * 100 : 0) + '%';
+  }
+
+  function updateProgress() {
+    refreshBackup();
+    let total = 0, done = 0;
+    for (const m of MEDS) {
+      let md = 0;
+      for (let n = 1; n <= m.days; n++) if (state[key(n, m.id)]) md++;
+      setBar('p-' + m.id, md, m.days);
+      total += m.days; done += md;
+    }
+    setBar('p-total', done, total);
+    document.getElementById('p-total-pct').textContent = Math.round(done / total * 100) + ' % de las tomas realizadas';
+
+    const ti = todayIndex();
+    const tt = document.getElementById('today-txt');
+    const ts = document.getElementById('today-sub');
+    if (ti < 0) {
+      tt.textContent = 'Aún no empieza';
+      ts.textContent = 'Comienza el ' + fmtDate.format(START);
+    } else if (ti >= TOTAL_DAYS) {
+      tt.textContent = 'Terminado';
+      ts.textContent = 'El tratamiento finalizó el ' + fmtDate.format(dayDate(TOTAL_DAYS - 1));
+    } else {
+      const d = days[ti];
+      const pending = d.meds.filter(m => !state[key(d.num, m.id)]);
+      tt.textContent = 'Día ' + d.num + ' de ' + TOTAL_DAYS;
+      ts.textContent = fmtShort.format(d.date) + ' · ' +
+        (pending.length ? 'Pendiente: ' + pending.map(m => m.name.split(' ')[0] + ' (' + m.time + ')').join(', ')
+                        : '✓ Todas las tomas de hoy hechas');
+    }
+  }
+
+  // ---- Controles ----
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+      render();
+    });
+  });
+
+  document.getElementById('go-today').addEventListener('click', () => {
+    const ti = todayIndex();
+    if (filter !== 'all') document.querySelector('.tab[data-filter="all"]').click();
+    const n = Math.min(Math.max(ti, 0), TOTAL_DAYS - 1) + 1;
+    const el = document.getElementById('dia-' + n);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  const confirmBox = document.getElementById('confirm');
+  document.getElementById('reset').addEventListener('click', () => { confirmBox.hidden = false; });
+  document.getElementById('confirm-no').addEventListener('click', () => { confirmBox.hidden = true; });
+  document.getElementById('confirm-yes').addEventListener('click', () => {
+    state = {}; save(); confirmBox.hidden = true; render(); updateProgress();
+  });
+
+  // Panel de copia de seguridad
+  const backupPanel = document.getElementById('backup-panel');
+  document.getElementById('backup-btn').addEventListener('click', () => {
+    backupPanel.hidden = !backupPanel.hidden;
+    if (!backupPanel.hidden) { refreshBackup(); backupPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    const ta = document.getElementById('backup-code');
+    const msg = document.getElementById('backup-msg');
+    const done = () => { msg.className = 'msg ok'; msg.textContent = '✓ Copiado'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(done, () => { ta.select(); msg.textContent = 'Selecciónalo y cópialo manualmente.'; });
+    } else { ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} }
+  });
+  document.getElementById('download-btn').addEventListener('click', () => {
+    const data = JSON.stringify({ app: 'control-medicamentos', inicio: '2026-11-19', guardado: new Date().toISOString(), tomas: state }, null, 2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    a.download = 'medicamentos-copia-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  document.getElementById('restore-btn').addEventListener('click', () => {
+    restore(document.getElementById('restore-code').value, document.getElementById('restore-msg'));
+  });
+  document.getElementById('restore-file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    f.text().then(t => restore(t, document.getElementById('restore-msg')));
+    e.target.value = '';
+  });
+
+  // Si otra pestaña cambia los datos, sincronizar
+  window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { load(); render(); updateProgress(); } });
+
+  // Al volver a la página (p. ej. al día siguiente), refrescar "hoy"
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); updateProgress(); } });
+
+  load();
+  render();
+  updateProgress();
+  syncCopies();
+
+  // Funcionar sin conexión desde la pantalla de inicio
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+})();
+</script>
+</body>
+</html>
